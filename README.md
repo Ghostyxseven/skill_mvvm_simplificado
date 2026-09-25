@@ -63,12 +63,12 @@ Sempre que a IA trabalhar, ela organizará os arquivos exatamente nesta árvore:
 src/
 ├── app/                        ← View: Telas e rotas (Expo Router)
 │   └── index.tsx               (Apenas renderiza e interage com o usuário)
-├── viewmodel/                  ← ViewModel: Custom Hooks
-│   └── useLoginViewModel.ts    (Gerencia loading, erro e chama Casos de Uso)
 ├── model/                      ← Model: Regras de negócio puras
 │   ├── entities/               (Entidades, ex: User.ts)
 │   ├── usecases/               (Regras, ex: AuthUseCases.ts)
 │   └── services/               (Contratos e Interfaces)
+├── viewmodel/                  ← ViewModel: Custom Hooks
+│   └── useLoginViewModel.ts    (Gerencia loading, erro e chama Casos de Uso)
 ├── infra/                      ← Infraestrutura: Onde fica o código "sujo"
 │   └── services/               (Implementações reais: Firebase, Axios, SQLite)
 └── factories/                  ← Factories: Injeção de dependências

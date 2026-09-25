@@ -22,8 +22,6 @@ src/
 ├── app/                        ← Telas (Expo Router)
 │   ├── index.tsx               ← View
 │   └── home.tsx
-├── viewmodel/
-│   └── useLoginViewModel.ts    ← ViewModel (Hooks)
 ├── model/                      ← Model/Domínio (Não conhece React/Firebase)
 │   ├── entities/
 │   │   └── User.ts             ← Entidades Puras
@@ -34,6 +32,8 @@ src/
 │   └── usecases/
 │       ├── IAuthUseCases.ts    ← Interfaces de Casos de Uso
 │       └── AuthUseCases.ts     ← Implementação das Regras de Negócio
+├── viewmodel/
+│   └── useLoginViewModel.ts    ← ViewModel (Hooks)
 ├── infra/                      ← Infraestrutura (Firebase, APIs, SQLite)
 │   ├── services/
 │   │   └── FirebaseAuthService.ts ← Implementação concreta
