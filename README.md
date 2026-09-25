@@ -6,6 +6,31 @@
 
 Quando instalada, os agentes de IA (Antigravity, Claude Code, Gemini CLI) **são obrigados** a seguir o padrão MVVM nas suas versões Simplificada ou Sofisticada. A IA para de fazer o padrão "CR - Codifica e Remenda" (código espaguete) e começa a separar responsabilidades, realizar validações passo a passo e aplicar Injeção de Dependências.
 
+## 💻 Como Instalar a Skill
+
+Diferente de bibliotecas normais, você **não** instala essa skill dentro do seu projeto (ela não vai no `package.json`). Você a instala **globalmente no seu assistente de IA**. 
+
+Assim, ela funciona para *qualquer* projeto mobile que você abrir no seu computador.
+
+**Opção 1: Usando o comando CLI de skills (Recomendado)**
+```bash
+skills install github:SEU-USUARIO/skill_mvvm_simplificado
+```
+
+**Opção 2: Instalação Manual (Git Clone)**
+Se você não tiver o comando `skills` configurado, basta clonar direto na pasta de inteligência artificial do seu sistema:
+```bash
+# Cria a pasta de skills da IA (caso não exista)
+mkdir -p ~/.agents/skills
+
+# Clona a skill diretamente para lá
+git clone https://github.com/SEU-USUARIO/skill_mvvm_simplificado.git ~/.agents/skills/skill_mvvm_simplificado
+```
+
+> **Pronto!** A partir de agora, qualquer assistente de IA que você abrir no seu terminal já conhecerá as regras da disciplina.
+
+---
+
 ## 🚀 Como Usar no Dia a Dia (Na Prática)
 
 Você não precisa decorar a arquitetura, criar pastas manualmente ou ficar lembrando a IA de seguir boas práticas. A skill cuida disso. Veja como é simples:
@@ -59,14 +84,3 @@ src/
 - **`examples/react_typescript.md`** & **`expo.md`**: Exemplos para aplicações React e React Native na versão simplificada.
 - **`references/padroes_estado.md`**: A regra exata de 5 passos para tratar erros sem usar `try/catch` na View.
 - **`references/injecao_dependencias.md`**: Como criar e usar Factories (Padrão Factory) para testabilidade.
-
-## 💻 Instalação
-
-```bash
-# Clone este repositório
-git clone https://github.com/SEU-USUARIO/skill_mvvm_simplificado.git
-
-# Crie um link simbólico para a pasta de skills da sua IA
-mkdir -p ~/.agents/skills
-ln -s $(pwd)/skill_mvvm_simplificado ~/.agents/skills/skill_mvvm_simplificado
-```
