@@ -1,70 +1,33 @@
-# Padrões de Estado no MVVM Simplificado
+# Padrões de Estado e Tratamento de Erros
 
-## Os 4 estados obrigatórios
+No padrão MVVM do professor de PDM, os estados de UI e os erros seguem regras estritas.
 
-Todo ViewModel deve gerenciar explicitamente estes 4 estados:
+## Os 4 estados obrigatórios na ViewModel
+
+Todo ViewModel deve gerenciar explicitamente estes 4 estados da interface:
 
 | Estado | Quando ocorre | O que a View mostra |
 |---|---|---|
-| **loading** | Buscando dados | Spinner / Skeleton |
+| **loading** | Buscando/Processando dados | Spinner / Skeleton |
 | **erro** | Falha na operação | Mensagem + botão de retry |
 | **vazio** | Sucesso mas sem dados | Mensagem informativa |
 | **sucesso** | Dados carregados | Lista / conteúdo |
 
-## Modelo de estado completo (TypeScript)
-
-```typescript
-type Estado<T> =
-  | { tipo: 'loading' }
-  | { tipo: 'erro'; mensagem: string }
-  | { tipo: 'vazio' }
-  | { tipo: 'sucesso'; dados: T };
-```
-
-## ViewModel com os 4 estados
-
-```typescript
-export function useProdutoViewModel() {
-  const [estado, setEstado] = useState<Estado<Produto[]>>({ tipo: 'loading' });
-
-  async function carregar() {
-    setEstado({ tipo: 'loading' });
-    try {
-      const dados = await produtoRepository.buscarTodos();
-      if (dados.length === 0) {
-        setEstado({ tipo: 'vazio' });
-      } else {
-        setEstado({ tipo: 'sucesso', dados });
-      }
-    } catch (e) {
-      setEstado({ tipo: 'erro', mensagem: 'Erro ao carregar produtos.' });
-    }
-  }
-
-  return { estado, carregar };
-}
-```
-
-## View respondendo aos 4 estados
-
-```tsx
-export function ProdutoPage() {
-  const { estado, carregar } = useProdutoViewModel();
-
-  useEffect(() => { carregar(); }, []);
-
-  switch (estado.tipo) {
-    case 'loading': return <Spinner />;
-    case 'erro':    return <Erro mensagem={estado.mensagem} onRetry={carregar} />;
-    case 'vazio':   return <p>Nenhum produto cadastrado.</p>;
-    case 'sucesso': return <ListaProdutos produtos={estado.dados} />;
-  }
-}
-```
-
-## Regra: nunca omitir estados
-
+## Regra: Nunca omitir estados
 - Se não tratar `loading` → a tela pisca ou mostra dados antigos
 - Se não tratar `erro` → o usuário não sabe o que aconteceu
 - Se não tratar `vazio` → parece que está carregando para sempre
-- Se não tratar `sucesso` → qual é o ponto?
+
+---
+
+## Fluxo de Erros (Os 5 Passos do Professor)
+
+De acordo com o livro (MVVM Sofisticado), o fluxo de tratamento de erros **DEVE** seguir exatamente estas 5 etapas:
+
+1. **Infraestrutura:** Captura os erros específicos das bibliotecas (Firebase, HTTP, SQLite, Axios).
+2. **Tradução:** A Infraestrutura converte esses erros técnicos em erros puros de domínio (ex: `AuthFailedError`).
+3. **Use Cases (Casos de Uso):** Podem traduzir erros e mapear mensagens para regras de negócio específicas.
+4. **ViewModel:** Transforma os erros de domínio/negócio em estados textuais legíveis para a View (`vm.error`).
+5. **View:** Apenas exibe o estado.
+
+> 🚨 **REGRA DE OURO:** A View **NUNCA** faz `try/catch`. O tratamento fica exclusivo para a ViewModel ou camadas inferiores.
