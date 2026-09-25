@@ -35,10 +35,13 @@ A View permanece extremamente simples e sem conhecer a infraestrutura:
 ```tsx
 // src/app/index.tsx
 import { makeLoginViewModel } from "../factories/loginFactory";
-import { View, Text, Button } from "react-native";
+import { useState } from "react";
+import { View, Text, Button, TextInput } from "react-native";
 
 const LoginScreen = () => {
   // A View chama a Factory para pegar a ViewModel já "montada"
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const vm = makeLoginViewModel();
 
   return (
