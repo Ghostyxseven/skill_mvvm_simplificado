@@ -1,87 +1,89 @@
 # 🏗️ Skill: MVVM Simplificado e Sofisticado (Padrão PDM)
 
-> Skill para agentes de IA que impõe rigorosamente a arquitetura MVVM ensinada na disciplina de PDM (Programação para Dispositivos Móveis).
+> Uma skill para inteligências artificiais (Antigravity, Claude Code, etc.) que ensina e impõe rigorosamente a arquitetura MVVM utilizada na disciplina de PDM (Programação para Dispositivos Móveis).
 
 ## 🎯 O que essa skill faz
 
-Quando instalada, os agentes de IA (Antigravity, Claude Code, Gemini CLI) **são obrigados** a seguir o padrão MVVM nas suas versões Simplificada ou Sofisticada. A IA para de fazer o padrão "CR - Codifica e Remenda" (código espaguete) e começa a separar responsabilidades, realizar validações passo a passo e aplicar Injeção de Dependências.
+Quando ativada, a IA abandona o péssimo padrão "CR - Codifica e Remenda" (código espaguete misturando tela, API e regras em um arquivo só) e passa a desenvolver seguindo uma separação profissional de responsabilidades.
+
+A skill guia a IA para construir as funcionalidades passo a passo, realizando validações e aplicando **Injeção de Dependências** através do padrão *Factory*.
+
+---
 
 ## 💻 Como Instalar a Skill
 
-Diferente de bibliotecas normais, você **não** instala essa skill dentro do seu projeto (ela não vai no `package.json`). Você a instala **globalmente no seu assistente de IA**. 
+Essa skill é instalada **globalmente no seu assistente de IA**, e não no seu projeto React Native (`package.json`). Ao instalar, a IA usará essas regras em qualquer projeto mobile que você abrir no seu computador.
 
-Assim, ela funciona para *qualquer* projeto mobile que você abrir no seu computador.
-
-**Opção 1: Usando o comando CLI de skills (Recomendado)**
+**Opção 1: Via CLI de Skills (Recomendado)**
 ```bash
 skills install github:SEU-USUARIO/skill_mvvm_simplificado
 ```
 
 **Opção 2: Instalação Manual (Git Clone)**
-Se você não tiver o comando `skills` configurado, basta clonar direto na pasta de inteligência artificial do seu sistema:
+Se você não possui o comando `skills`, basta clonar o repositório diretamente na pasta oculta de agentes do seu sistema:
 ```bash
-# Cria a pasta de skills da IA (caso não exista)
 mkdir -p ~/.agents/skills
-
-# Clona a skill diretamente para lá
 git clone https://github.com/SEU-USUARIO/skill_mvvm_simplificado.git ~/.agents/skills/skill_mvvm_simplificado
 ```
-
-> **Pronto!** A partir de agora, qualquer assistente de IA que você abrir no seu terminal já conhecerá as regras da disciplina.
 
 ---
 
 ## 🚀 Como Usar no Dia a Dia (Na Prática)
 
-Você não precisa decorar a arquitetura, criar pastas manualmente ou ficar lembrando a IA de seguir boas práticas. A skill cuida disso. Veja como é simples:
+Você não precisa decorar a arquitetura, criar as pastas manualmente ou ficar brigando com a IA para ela separar o código. A skill cuida disso sozinha.
 
-### Passo 1: Crie seu projeto normalmente
-Crie seu aplicativo Expo ou React Native do zero (ou abra um existente):
+### 1. Inicie seu projeto normalmente
 ```bash
 npx create-expo-app meu-projeto
 cd meu-projeto
 ```
 
-### Passo 2: Faça o pedido para a IA
-Abra seu agente de IA (Antigravity, Claude Code, etc) dentro do projeto e simplesmente peça a funcionalidade, sem precisar explicar arquitetura:
+### 2. Faça o pedido para a IA
+Abra o seu assistente de IA no terminal (dentro da pasta do projeto) e faça o pedido com linguagem natural:
 > **Você:** *"Crie uma tela de Login que autentica usando Firebase, contendo os campos de e-mail e senha."*
 
-### Passo 3: O Trabalho da IA
-A IA vai detectar automaticamente que é um projeto mobile e vai puxar as regras desta skill. Você verá a IA criando as coisas **nesta ordem exata**:
-1. ⚙️ Cria a entidade `User` e a regra de negócio (`Model`).
-2. 🔌 Cria a conexão com o Firebase isolada (`Infraestrutura`).
-3. 🧠 Cria o Custom Hook gerenciando loading e erro (`ViewModel`).
-4. 🎨 Desenha a interface puxando o hook (`View`).
-5. ✅ Faz uma auto-leitura do código para garantir que nenhuma regra do MVVM foi quebrada.
+### 3. A Mágica Acontece
+A IA vai detectar que é um projeto mobile e executará os seguintes passos autonomamente:
+1. ⚙️ Cria a entidade e a regra de negócio (`Model`).
+2. 🔌 Cria a conexão real com o Firebase de forma isolada (`Infraestrutura`).
+3. 🧠 Cria o Custom Hook que fará a ponte e gerenciará os estados de erro/loading (`ViewModel`).
+4. 🎨 Desenha a interface pura puxando o hook (`View`).
+5. ✅ Lê o próprio código e faz um "checklist" para garantir que não misturou as responsabilidades.
 
-### Passo 4: Código Limpo
-No final, a sua pasta `src/` estará perfeitamente modularizada e pronta para tirar 10 na disciplina, sem você ter tido o estresse de organizar as pastas manualmente.
+### 4. Código Limpo
+Sua pasta `src/` estará perfeitamente modularizada e pronta para ser avaliada pelo seu professor.
 
 ---
 
 ## 📂 Estrutura de Pastas (Como seu projeto vai ficar)
 
+Sempre que a IA trabalhar, ela organizará os arquivos exatamente nesta árvore:
+
 ```text
 src/
 ├── app/                        ← View: Telas e rotas (Expo Router)
 │   └── index.tsx               (Apenas renderiza e interage com o usuário)
-├── viewmodel/                  ← ViewModel: Custom Hooks (ex: useLogin.ts)
+├── viewmodel/                  ← ViewModel: Custom Hooks
 │   └── useLoginViewModel.ts    (Gerencia loading, erro e chama Casos de Uso)
-├── model/                      ← Model/Domínio: Regras de negócio puras
+├── model/                      ← Model: Regras de negócio puras
 │   ├── entities/               (Entidades, ex: User.ts)
 │   ├── usecases/               (Regras, ex: AuthUseCases.ts)
-│   └── services/               (Contratos/Interfaces puras)
+│   └── services/               (Contratos e Interfaces)
 ├── infra/                      ← Infraestrutura: Onde fica o código "sujo"
 │   └── services/               (Implementações reais: Firebase, Axios, SQLite)
-└── factories/                         ← Fábricas (Injeção de dependências)
+└── factories/                  ← Factories: Injeção de dependências
     └── loginFactory.ts         (Fábricas que montam a ViewModel para a View)
 ```
 
-## 📚 Conteúdo da Skill
+---
 
-- **`SKILL.md`**: Arquivo principal com as regras de ouro, ordem de implementação e checklist de validação para a IA.
-- **`examples/mvvm_sofisticado.md`**: Exemplo completo da arquitetura de 5 camadas.
-- **`examples/react_typescript.md`** & **`expo.md`**: Exemplos para aplicações React e React Native na versão simplificada.
-- **`references/camadas_explicadas.md`**: Explicação extremamente didática e simples do papel de cada pasta (View, ViewModel, Model, Infra, DI).
+## 📚 O que tem dentro da Skill?
+
+Se você quiser ler e aprender como a skill ensina a IA, explore os arquivos do repositório:
+
+- **`SKILL.md`**: O cérebro da skill. Tem as regras de ouro, a ordem de implementação (TDD) e o checklist rigoroso de validação para a IA.
+- **`examples/mvvm_sofisticado.md`**: Exemplo completo e comentado da arquitetura em 5 camadas.
+- **`examples/react_typescript.md` & `expo.md`**: Exemplos para a versão MVVM Simplificada.
+- **`references/camadas_explicadas.md`**: Explicação extremamente didática do papel de cada pasta (View, ViewModel, Model, Infra, Factories) através de analogias simples.
 - **`references/padroes_estado.md`**: A regra exata de 5 passos para tratar erros sem usar `try/catch` na View.
-- **`references/injecao_dependencias.md`**: Como criar e usar Factories (Padrão Factory) para testabilidade.
+- **`references/injecao_dependencias.md`**: Como criar e usar *Factories* para desacoplar a arquitetura e permitir testes unitários (Mocks).
