@@ -1,82 +1,236 @@
 ---
 name: skill_mvvm_simplificado
-description: Use when creating, editing, or reviewing any application code — especially mobile (Flutter, React Native, Expo) or frontend (React, Vue, Angular). This skill enforces simplified MVVM architecture and MUST be followed whenever creating screens, components, pages, services, or data layers. Always apply when the user mentions ViewModel, Model, View, screens, components, state management, repositories, or business logic. Do NOT allow the AI to mix responsibilities between layers or skip any required layer.
+description: Use when creating, editing, or reviewing any React Native or Expo application code. This skill enforces the simplified MVVM architecture exactly as taught in the PDM course (Programação para Dispositivos Móveis). MUST be followed whenever creating screens, components, services, entities, or viewmodels. Apply when the user mentions tela, componente, serviço, entidade, ViewModel, hook, autenticação, navegação, estado, ou qualquer código de aplicação móvel. Do NOT allow mixing responsibilities between layers.
 ---
 
-# MVVM Simplificado — Arquitetura Obrigatória
+# MVVM Simplificado — Padrão do Professor (PDM)
 
 ## Regra Central
 
-**Todo código de aplicação DEVE seguir MVVM simplificado.**
-Não há exceção: seja uma tela simples, um componente pequeno ou um fluxo complexo — a separação de camadas é obrigatória.
+**Todo código de aplicação React Native / Expo DEVE seguir MVVM Simplificado exatamente como ensinado na disciplina PDM.**
 
-Misturar responsabilidades entre camadas é proibido. Não importe regras de negócio na View. Não faça chamadas de API direto no componente. Não coloque lógica de UI no ViewModel.
+Evite o padrão "CR — Codifica & Remenda" (também chamado "Big Tripe"): concentrar tudo — interface, regras de negócio e navegação — em um único arquivo. Isso torna o código difícil de testar, reaproveitar e evoluir.
 
 ---
 
 ## As 3 Camadas
 
-### 1. Model (Dados)
-**Responsabilidade:** Representar os dados e se comunicar com fontes externas.
+### Model
+Concentra todo o domínio da aplicação. É dividido em:
 
-- Define as entidades/classes de dados
-- Contém Repositórios que acessam API, banco de dados, cache
-- **Não conhece** a UI nem o ViewModel
-- **Não tem** lógica de apresentação
+- **`entities/`** — tipos e entidades puras (ex: `User.ts`)
+- **`services/`** — regras de negócio e operações específicas (ex: `AuthService.ts`)
+- **`repositories/`** — abstração de acesso a dados (ex: `TaskRepository.ts`)
 
-```
-models/
-  user.dart / User.ts          ← entidade de dados
-repositories/
-  user_repository.dart         ← acessa API, DB, cache
-```
+O Model **não conhece** React, hooks nem nada de UI.
 
-### 2. ViewModel (Lógica de negócio + Estado)
-**Responsabilidade:** Processar dados, expor estado para a View, responder a ações do usuário.
+### ViewModel
+Implementada como **Custom Hook** (ex: `useLoginViewModel.ts`).
 
-- Chama o Repository e transforma os dados
-- Gerencia o estado da tela (loading, erro, sucesso, dados)
-- Expõe métodos que a View pode chamar (ex: `carregarUsuarios()`)
-- **Não importa** nada de UI (sem widgets, sem componentes visuais)
-- **Não faz** chamadas de API diretamente
+Responsabilidades:
+- Gerenciar o estado da tela (`loading`, `error`, dados)
+- Expor as ações que a View pode chamar (`handleLogin`, `handleLogout`)
+- Chamar os serviços/repositórios do Model
 
-```
-viewmodels/
-  user_viewmodel.dart / useUserViewModel.ts
-```
+A ViewModel **não contém** elementos de interface (sem JSX, sem componentes visuais).
 
-### 3. View (Interface)
-**Responsabilidade:** Exibir dados e capturar ações do usuário. Nada mais.
+### View
+Representada pelas telas e componentes (arquivos `.tsx`).
 
-- Lê o estado do ViewModel e renderiza
-- Delega todas as ações ao ViewModel
-- **Não contém** lógica de negócio
-- **Não faz** chamadas de API
-- **Não transforma** dados — só exibe
+Responsabilidades:
+- Importar a ViewModel e consumir seu estado e ações
+- Renderizar o conteúdo com base no estado
+- Estados de UI puros (como valor digitado num campo) podem ficar na View
 
-```
-views/ ou screens/ ou pages/
-  user_screen.dart / UserPage.tsx
-```
+A View **não contém** lógica de negócio nem chama serviços diretamente.
 
 ---
 
 ## Estrutura de Pastas Obrigatória
 
 ```
-lib/ (ou src/)
-├── models/
-│   └── user.dart
-├── repositories/
-│   └── user_repository.dart
-├── viewmodels/
-│   └── user_viewmodel.dart
-├── views/ (ou screens/ ou pages/)
-│   └── user_screen.dart
-└── core/
-    ├── services/          ← integrações externas (HTTP, storage)
-    └── utils/             ← funções utilitárias puras
+src/
+├── app/                        ← telas gerenciadas pelo Expo Router
+│   ├── _layout.tsx             ← estrutura de navegação principal
+│   ├── index.tsx               ← tela de Login (View)
+│   └── home.tsx                ← tela Home (View)
+├── model/
+│   ├── entities/
+│   │   └── User.ts             ← entidades e tipos puros
+│   ├── services/
+│   │   └── AuthService.ts      ← regras de negócio
+│   └── repositories/
+│       └── (repositórios futuros)
+├── viewmodel/
+│   └── useLoginViewModel.ts    ← Custom Hook = ViewModel
+└── view/
+    └── components/             ← componentes visuais reutilizáveis
 ```
+
+> **Dica do professor:** use `camelCase` para hooks e `PascalCase` para componentes React.
+> Exemplo: `useLoginViewModel.ts` e `LoginView.tsx`
+
+---
+
+## Exemplo Completo (exatamente como o professor ensina)
+
+### Etapa 1 — Entidade no Model
+
+```typescript
+// src/model/entities/User.ts
+export type User = {
+  uID: string;
+  userName: string;
+};
+```
+
+### Etapa 2 — Service no Model
+
+```typescript
+// src/model/services/AuthService.ts
+import { User } from "../entities/user";
+
+export class AuthService {
+  async login(email: string, password: string): Promise<User> {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    if (email !== "user@example.com" || password !== "password") {
+      throw new Error("invalid credentials");
+    }
+    return {
+      uID: "123",
+      userName: "user123",
+    };
+  }
+}
+```
+
+### Etapa 3 — ViewModel (Custom Hook)
+
+```typescript
+// src/viewmodel/useLoginViewModel.ts
+import { useState } from "react";
+import { User } from "../model/entities/user";
+import { AuthService } from "../model/services/authService";
+
+export type LoginState = {
+  userId: string | null;
+  loading: boolean;
+  error: string | null;
+};
+
+export type LoginActions = {
+  handleLogin: (email: string, password: string) => Promise<void>;
+};
+
+export function useLoginViewModel(): LoginState & LoginActions {
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const service = new AuthService();
+
+  async function handleLogin(email: string, password: string) {
+    try {
+      setLoading(true);
+      setError(null);
+      const user: User = await service.login(email, password);
+      setUserId(user.uID);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return { userId, loading, error, handleLogin };
+}
+```
+
+### Etapa 4 — View consumindo a ViewModel
+
+```tsx
+// src/app/index.tsx
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { Button, StyleSheet, Text, TextInput, View } from "react-native";
+import { useLoginViewModel } from "../viewmodel/useLoginViewModel";
+
+const Index = () => {
+  // estados de UI puros ficam na View
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  // estado e ações da aplicação vêm da ViewModel
+  const { userId, loading, error, handleLogin } = useLoginViewModel();
+
+  useEffect(() => {
+    if (userId) {
+      router.replace("/home");
+    } else {
+      setEmail('');
+      setPassword('');
+    }
+  }, [userId, error]);
+
+  if (loading) {
+    return <Text>loading...</Text>;
+  }
+
+  return (
+    <View style={styles.container}>
+      <TextInput
+        style={styles.input}
+        placeholder="email"
+        value={email}
+        onChangeText={setEmail}
+      />
+      <TextInput
+        style={styles.input}
+        placeholder="password"
+        value={password}
+        onChangeText={setPassword}
+      />
+      <Button
+        title="login"
+        onPress={() => handleLogin(email, password)}
+      />
+      {error && <Text>error: {error}</Text>}
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    padding: 24,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+});
+
+export default Index;
+```
+
+---
+
+## O que é estado da aplicação vs. estado de UI?
+
+O professor faz essa distinção importante:
+
+| Estado de UI (fica na View) | Estado da aplicação (fica na ViewModel) |
+|---|---|
+| Valor digitado num campo de texto | `userId` (usuário autenticado) |
+| Aba selecionada | `loading` (operação em andamento) |
+| Modal aberto/fechado | `error` (mensagem de erro do negócio) |
+| Accordion expandido | Dados carregados da API |
+
+Com o tempo você vai aprimorar a capacidade de diferenciar estes estados.
 
 ---
 
@@ -84,119 +238,32 @@ lib/ (ou src/)
 
 | ❌ Proibido | ✅ Correto |
 |---|---|
-| Chamar API direto na View | View chama ViewModel, ViewModel chama Repository |
-| Colocar `if/else` de negócio na View | Lógica vai no ViewModel |
-| Importar Widget/Component no ViewModel | ViewModel é puro — sem dependências de UI |
-| Criar uma tela sem ViewModel | Toda tela tem seu ViewModel |
-| Misturar Model e ViewModel no mesmo arquivo | Sempre arquivos separados |
-| Fazer fetch de dados no componente principal | Sempre via Repository |
+| Lógica de autenticação dentro do componente da tela | Criar `AuthService` em `model/services/` |
+| Tipo/entidade declarado dentro do arquivo da tela | Criar arquivo em `model/entities/` |
+| `fetch()` ou chamada de API direto na View | View chama ViewModel, ViewModel chama Service |
+| JSX ou componente visual dentro da ViewModel | ViewModel é um hook puro sem UI |
+| Toda a lógica em um único arquivo ("Big Tripe") | Separar em Model, ViewModel e View |
 
 ---
 
-## Fluxo de Dados (sempre nesta direção)
+## Evolução futura (MVVM Sofisticado)
 
-```
-View → ViewModel → Repository → API/DB
-         ↑               ↓
-       Estado          Dados brutos
-```
+O professor ensina que, após dominar o MVVM Simplificado, o próximo passo é:
 
-A View **nunca** acessa o Repository diretamente.
-O Repository **nunca** conhece o ViewModel ou a View.
+- Extrair interfaces de repositórios para o Model
+- Mover implementações concretas para uma camada de **Infraestrutura**
+- Transformar ViewModels em classes independentes do React (facilita testes unitários)
 
----
-
-## Nomeação Obrigatória
-
-| Camada | Sufixo/Prefixo | Exemplo |
-|---|---|---|
-| Entidade | sem sufixo | `User`, `Product`, `Order` |
-| Repository | `Repository` | `UserRepository` |
-| ViewModel | `ViewModel` ou `useXxxViewModel` | `UserViewModel`, `useUserViewModel` |
-| View/Tela | `Screen`, `Page` ou `View` | `UserScreen`, `UserPage` |
-| Service | `Service` | `HttpService`, `StorageService` |
-
----
-
-## Exemplo Mínimo (Flutter/Dart)
-
-**Model:**
-```dart
-// models/user.dart
-class User {
-  final String id;
-  final String nome;
-  User({required this.id, required this.nome});
-}
-```
-
-**Repository:**
-```dart
-// repositories/user_repository.dart
-class UserRepository {
-  Future<List<User>> buscarTodos() async {
-    // chama a API aqui
-  }
-}
-```
-
-**ViewModel:**
-```dart
-// viewmodels/user_viewmodel.dart
-class UserViewModel extends ChangeNotifier {
-  final UserRepository _repo = UserRepository();
-  List<User> usuarios = [];
-  bool carregando = false;
-
-  Future<void> carregarUsuarios() async {
-    carregando = true;
-    notifyListeners();
-    usuarios = await _repo.buscarTodos();
-    carregando = false;
-    notifyListeners();
-  }
-}
-```
-
-**View:**
-```dart
-// views/user_screen.dart
-class UserScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final vm = context.watch<UserViewModel>();
-    if (vm.carregando) return CircularProgressIndicator();
-    return ListView(
-      children: vm.usuarios.map((u) => Text(u.nome)).toList(),
-    );
-  }
-}
-```
-
----
-
-## Exemplos para outros frameworks
-
-Leia os arquivos em `examples/` para ver implementações em:
-- `examples/react_typescript.md` — React + TypeScript + hooks
-- `examples/vue.md` — Vue 3 + Composition API
-- `examples/expo.md` — Expo / React Native
+Por enquanto, mantenha ViewModels como Custom Hooks — é a abordagem prática ensinada na disciplina.
 
 ---
 
 ## Sinais de que o código está errado (red flags)
 
-- Você vê `fetch()`, `axios.get()` ou `http.get()` dentro de um componente/widget → **ERRADO**
-- Você vê lógica condicional de negócio (`if usuarioAdmin`, `calcular desconto`) dentro de uma View → **ERRADO**
-- O ViewModel importa `useState`, `Widget`, ou qualquer coisa visual → **ERRADO**
-- Existe uma tela que não tem um ViewModel correspondente → **ERRADO**
-- Model e ViewModel estão no mesmo arquivo → **ERRADO**
+- Você vê `fetch()`, `axios` ou lógica de autenticação dentro de um `.tsx` de tela → **ERRADO**
+- Tipo ou entidade declarado dentro do arquivo de tela → **ERRADO**
+- A ViewModel importa algo de `react-native` (View, Text, Button etc.) → **ERRADO**
+- Uma tela sem Custom Hook correspondente → **ERRADO**
+- Toda a lógica de uma funcionalidade em um único arquivo → **padrão "Big Tripe" — ERRADO**
 
-Ao encontrar qualquer red flag acima, refatore antes de continuar.
-
----
-
-## Para mais exemplos e referências
-
-- `references/padroes_estado.md` — como gerenciar estado (loading, erro, sucesso, vazio)
-- `references/testes.md` — como testar cada camada separadamente
+Ao encontrar qualquer red flag, refatore antes de continuar.
