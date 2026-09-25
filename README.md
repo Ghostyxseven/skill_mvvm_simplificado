@@ -82,5 +82,6 @@ src/
 - **`SKILL.md`**: Arquivo principal com as regras de ouro, ordem de implementação e checklist de validação para a IA.
 - **`examples/mvvm_sofisticado.md`**: Exemplo completo da arquitetura de 5 camadas.
 - **`examples/react_typescript.md`** & **`expo.md`**: Exemplos para aplicações React e React Native na versão simplificada.
+- **`references/camadas_explicadas.md`**: Explicação extremamente didática e simples do papel de cada pasta (View, ViewModel, Model, Infra, DI).
 - **`references/padroes_estado.md`**: A regra exata de 5 passos para tratar erros sem usar `try/catch` na View.
 - **`references/injecao_dependencias.md`**: Como criar e usar Factories (Padrão Factory) para testabilidade.
