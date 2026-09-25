@@ -6,9 +6,35 @@
 
 Quando instalada, os agentes de IA (Antigravity, Claude Code, Gemini CLI) **são obrigados** a seguir o padrão MVVM nas suas versões Simplificada ou Sofisticada. A IA para de fazer o padrão "CR - Codifica e Remenda" (código espaguete) e começa a separar responsabilidades, realizar validações passo a passo e aplicar Injeção de Dependências.
 
-## 📂 Estrutura de Pastas (Como seu projeto vai ficar)
+## 🚀 Como Usar no Dia a Dia (Na Prática)
 
-A IA é instruída a montar os seus projetos exatamente com esta árvore:
+Você não precisa decorar a arquitetura, criar pastas manualmente ou ficar lembrando a IA de seguir boas práticas. A skill cuida disso. Veja como é simples:
+
+### Passo 1: Crie seu projeto normalmente
+Crie seu aplicativo Expo ou React Native do zero (ou abra um existente):
+```bash
+npx create-expo-app meu-projeto
+cd meu-projeto
+```
+
+### Passo 2: Faça o pedido para a IA
+Abra seu agente de IA (Antigravity, Claude Code, etc) dentro do projeto e simplesmente peça a funcionalidade, sem precisar explicar arquitetura:
+> **Você:** *"Crie uma tela de Login que autentica usando Firebase, contendo os campos de e-mail e senha."*
+
+### Passo 3: O Trabalho da IA
+A IA vai detectar automaticamente que é um projeto mobile e vai puxar as regras desta skill. Você verá a IA criando as coisas **nesta ordem exata**:
+1. ⚙️ Cria a entidade `User` e a regra de negócio (`Model`).
+2. 🔌 Cria a conexão com o Firebase isolada (`Infraestrutura`).
+3. 🧠 Cria o Custom Hook gerenciando loading e erro (`ViewModel`).
+4. 🎨 Desenha a interface puxando o hook (`View`).
+5. ✅ Faz uma auto-leitura do código para garantir que nenhuma regra do MVVM foi quebrada.
+
+### Passo 4: Código Limpo
+No final, a sua pasta `src/` estará perfeitamente modularizada e pronta para tirar 10 na disciplina, sem você ter tido o estresse de organizar as pastas manualmente.
+
+---
+
+## 📂 Estrutura de Pastas (Como seu projeto vai ficar)
 
 ```text
 src/
@@ -25,22 +51,6 @@ src/
 └── di/                         ← Dependency Injection (Injeção de dependências)
     └── loginFactory.ts         (Fábricas que montam a ViewModel para a View)
 ```
-
-## 🚀 Como Usar
-
-A skill roda sozinha de forma transparente. Após instalada, basta pedir para a IA criar uma tela ou funcionalidade. 
-
-**Exemplo de pedido:**
-> *"Crie uma tela de Perfil de Usuário para alterar a foto do avatar."*
-
-**O que a IA vai fazer automaticamente:**
-1. Ler as regras do `SKILL.md`.
-2. Criar a camada `Model` (Entidade e Interface do Repositório).
-3. Criar a `Infra` e o `UseCase` (Regra de negócio).
-4. Criar a `ViewModel` gerenciando os 4 estados obrigatórios.
-5. Criar a `View` puxando as funções através da `Factory`.
-6. Rodar o **Checklist de Autocorreção** (revisar se não misturou as responsabilidades).
-7. Só entregar o código pra você quando estiver testado e validado.
 
 ## 📚 Conteúdo da Skill
 
