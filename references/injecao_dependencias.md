@@ -9,7 +9,7 @@ O professor ensina o uso do padrão **Factory** para Injeção de Dependências.
 Devemos criar um arquivo para montar as dependências antes de entregá-las para a View.
 
 ```typescript
-// src/di/loginFactory.ts
+// src/factories/loginFactory.ts
 import { FirebaseAuthService } from "../infra/services/FirebaseAuthService";
 import { FirestoreUserRepository } from "../infra/repositories/FirestoreUserRepository";
 import { AuthenticateUserUseCase } from "../model/usecases/AuthenticateUserUseCase";
@@ -34,7 +34,7 @@ A View permanece extremamente simples e sem conhecer a infraestrutura:
 
 ```tsx
 // src/app/index.tsx
-import { makeLoginViewModel } from "../di/loginFactory";
+import { makeLoginViewModel } from "../factories/loginFactory";
 import { View, Text, Button } from "react-native";
 
 const LoginScreen = () => {

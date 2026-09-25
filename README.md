@@ -73,7 +73,7 @@ src/
 │   └── services/               (Contratos/Interfaces puras)
 ├── infra/                      ← Infraestrutura: Onde fica o código "sujo"
 │   └── services/               (Implementações reais: Firebase, Axios, SQLite)
-└── di/                         ← Dependency Injection (Injeção de dependências)
+└── factories/                         ← Fábricas (Injeção de dependências)
     └── loginFactory.ts         (Fábricas que montam a ViewModel para a View)
 ```
 
