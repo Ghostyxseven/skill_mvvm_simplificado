@@ -1,16 +1,17 @@
 # MVVM Sofisticado — Padrão do Professor (PDM)
 
-Quando a aplicação cresce, o MVVM Simplificado pode ser evoluído para o **MVVM Sofisticado**. O professor de PDM ensina esta arquitetura em 5 camadas.
+Quando a aplicação cresce, o MVVM Simplificado pode ser evoluído para o **MVVM Sofisticado**. O professor de PDM ensina esta arquitetura em 5 camadas (mais a injeção de dependências).
 
 Nesta versão, optamos por manter o nome clássico **`model`** (como a camada de Domínio), pois é mais bonito e fiel à sigla MVVM.
 
-## As 5 Camadas
+## As 5 Camadas + Factories
 
 1. **View** – Componentes React Native responsáveis apenas por renderização;
 2. **ViewModel** – Hooks que gerenciam estado da View e expõem Actions;
 3. **UseCases** – Camada de orquestração de regras de negócio complexas;
 4. **Model (Domínio)** – Entidades, interfaces de serviços e repositórios puros;
-5. **Infraestrutura** – Implementações concretas dos Repositórios e Serviços (ex: Firebase, Axios).
+5. **Infraestrutura** – Implementações concretas dos Repositórios e Serviços (ex: Firebase, Axios);
+6. **Factories** – Onde ocorre a Injeção de Dependências, isolando a View da Infraestrutura.
 
 ---
 
@@ -33,11 +34,13 @@ src/
 │   └── usecases/
 │       ├── IAuthUseCases.ts    ← Interfaces de Casos de Uso
 │       └── AuthUseCases.ts     ← Implementação das Regras de Negócio
-└── infra/                      ← Infraestrutura (Firebase, APIs, SQLite)
-    ├── services/
-    │   └── FirebaseAuthService.ts ← Implementação concreta
-    └── repositories/
-        └── FirestoreUserRepository.ts
+├── infra/                      ← Infraestrutura (Firebase, APIs, SQLite)
+│   ├── services/
+│   │   └── FirebaseAuthService.ts ← Implementação concreta
+│   └── repositories/
+│       └── FirestoreUserRepository.ts
+└── factories/                  ← Fábricas (Injeção de dependências)
+    └── loginFactory.ts         
 ```
 
 ---
@@ -131,25 +134,35 @@ export function useLoginViewModel(authUseCases: IAuthUseCases) {
 }
 ```
 
-### 5. View (Tela)
+### 5. Factory (Injeção de Dependência)
+
+```typescript
+// src/factories/loginFactory.ts
+import { FirebaseAuthService } from "../infra/services/FirebaseAuthService";
+import { AuthUseCases } from "../model/usecases/AuthUseCases";
+import { useLoginViewModel } from "../viewmodel/useLoginViewModel";
+
+export function makeLoginViewModel() {
+  const authService = new FirebaseAuthService();
+  const authUseCases = new AuthUseCases(authService);
+  return useLoginViewModel(authUseCases);
+}
+```
+
+### 6. View (Tela)
 
 ```tsx
 // src/app/index.tsx
 import { useState } from "react";
 import { View, TextInput, Button, Text } from "react-native";
-import { useLoginViewModel } from "../viewmodel/useLoginViewModel";
-import { AuthUseCases } from "../model/usecases/AuthUseCases";
-import { FirebaseAuthService } from "../infra/services/FirebaseAuthService";
-
-// Factories são úteis para injetar as dependências concretas
-const authService = new FirebaseAuthService();
-const authUseCases = new AuthUseCases(authService);
+import { makeLoginViewModel } from "../factories/loginFactory";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   
-  const { loading, error, handleLogin } = useLoginViewModel(authUseCases);
+  // Consome a Factory em vez de importar os serviços diretamente
+  const { loading, error, handleLogin } = makeLoginViewModel();
 
   return (
     <View>
@@ -168,4 +181,5 @@ export default function LoginScreen() {
 - **Model**: Contém as **regras de negócio** puras, entidades e contratos (interfaces). Não sabe de onde vêm os dados (API, Firebase) nem como são exibidos (React).
 - **Infraestrutura**: Sabe **como** buscar/salvar os dados usando as bibliotecas específicas (Axios, Firebase SDK), cumprindo o contrato exigido pelo Model.
 - **ViewModel**: Converte os dados e erros do Model para estados de interface (UI State).
-- **View**: Apenas exibe o que a ViewModel manda e avisa a ViewModel quando o usuário interage.
+- **Factory**: Une a Infraestrutura ao Model, e entrega para a ViewModel, isolando completamente a View.
+- **View**: Apenas exibe o que a ViewModel manda e avisa a ViewModel quando o usuário interage. Não conhece nada de `infra` ou `model`.
