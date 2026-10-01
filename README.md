@@ -16,14 +16,14 @@ Essa skill é instalada **globalmente no seu assistente de IA**, e não no seu p
 
 **Opção 1: Via CLI de Skills (Recomendado)**
 ```bash
-skills install github:SEU-USUARIO/skill_mvvm_simplificado
+skills install github:ghostyxseven/skill_mvvm_simplificado
 ```
 
 **Opção 2: Instalação Manual (Git Clone)**
 Se você não possui o comando `skills`, basta clonar o repositório diretamente na pasta oculta de agentes do seu sistema:
 ```bash
 mkdir -p ~/.agents/skills
-git clone https://github.com/SEU-USUARIO/skill_mvvm_simplificado.git ~/.agents/skills/skill_mvvm_simplificado
+git clone https://github.com/ghostyxseven/skill_mvvm_simplificado.git ~/.agents/skills/skill_mvvm_simplificado
 ```
 
 ---
@@ -61,18 +61,21 @@ Sempre que a IA trabalhar, ela organizará os arquivos exatamente nesta árvore:
 
 ```text
 src/
-├── app/                        ← View: Telas e rotas (Expo Router)
-│   └── index.tsx               (Apenas renderiza e interage com o usuário)
-├── model/                      ← Model: Regras de negócio puras
-│   ├── entities/               (Entidades, ex: User.ts)
-│   ├── usecases/               (Regras, ex: AuthUseCases.ts)
-│   └── services/               (Contratos e Interfaces)
+├── app/                        ← View: telas e rotas (Expo Router)
+│   └── index.tsx               (apenas renderiza e interage com o usuário)
+├── view/components/            ← View: componentes reutilizáveis
 ├── viewmodel/                  ← ViewModel: Custom Hooks
-│   └── useLoginViewModel.ts    (Gerencia loading, erro e chama Casos de Uso)
-├── infra/                      ← Infraestrutura: Onde fica o código "sujo"
-│   └── services/               (Implementações reais: Firebase, Axios, SQLite)
-└── factories/                  ← Factories: Injeção de dependências
-    └── loginFactory.ts         (Fábricas que montam a ViewModel para a View)
+│   └── useLoginViewModel.ts    (loading, erro e chamadas ao Model/UseCase)
+├── model/                      ← Model: domínio puro (sem React)
+│   ├── entities/               (User.ts)
+│   ├── services/               (Simplificado: implementação | Sofisticado: interfaces)
+│   ├── repositories/
+│   ├── errors/                 (Sofisticado: ValidationError, AuthFailedError)
+│   └── usecases/               (Sofisticado: AuthUseCases.ts)
+├── infra/                      ← Sofisticado: Firebase, Axios, SQLite (código "sujo")
+│   └── services/
+└── factories/                  ← Sofisticado: injeção de dependências
+    └── loginFactory.ts
 ```
 
 ---
@@ -81,9 +84,9 @@ src/
 
 Se você quiser ler e aprender como a skill ensina a IA, explore os arquivos do repositório:
 
-- **`SKILL.md`**: O cérebro da skill. Tem as regras de ouro, a ordem de implementação (TDD) e o checklist rigoroso de validação para a IA.
+- **`SKILL.md`**: O cérebro da skill. Convenções, quando usar cada versão (Simplificado ou Sofisticado), fluxo de verificação e checklist de validação.
 - **`examples/mvvm_sofisticado.md`**: Exemplo completo e comentado da arquitetura em 5 camadas.
-- **`examples/react_typescript.md` & `expo.md`**: Exemplos para a versão MVVM Simplificada.
+- **`examples/expo.md`**: Lista de dados com os 4 estados (Simplificado). **`react_typescript.md`**: a mesma ideia para web.
 - **`references/camadas_explicadas.md`**: Explicação extremamente didática do papel de cada pasta (View, ViewModel, Model, Infra, Factories) através de analogias simples.
 - **`references/padroes_estado.md`**: A regra exata de 5 passos para tratar erros sem usar `try/catch` na View.
 - **`references/injecao_dependencias.md`**: Como criar e usar *Factories* para desacoplar a arquitetura e permitir testes unitários (Mocks).
