@@ -90,3 +90,6 @@ Se você quiser ler e aprender como a skill ensina a IA, explore os arquivos do 
 - **`references/camadas_explicadas.md`**: Explicação extremamente didática do papel de cada pasta (View, ViewModel, Model, Infra, Factories) através de analogias simples.
 - **`references/padroes_estado.md`**: A regra exata de 5 passos para tratar erros sem usar `try/catch` na View.
 - **`references/injecao_dependencias.md`**: Como criar e usar *Factories* para desacoplar a arquitetura e permitir testes unitários (Mocks).
+- **`references/navegacao.md`**: Expo Router na prática (layouts, rotas dinâmicas, `router` x `Link`, Tabs/Drawer, `+not-found`).
+- **`references/consumo_apis.md`**: `fetch`/`axios` e `FlatList` dentro do MVVM (Repository no Simplificado, Infra no Sofisticado).
+- **`references/recursos_nativos.md`**: Câmera e localização sem quebrar as camadas (permissão na ViewModel, SDK na Infra).

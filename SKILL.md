@@ -197,6 +197,14 @@ export default Login;
 
 ---
 
+## Navegação, dados remotos e recursos nativos
+
+- **Navegação** (Expo Router, Tabs/Drawer, rotas dinâmicas, `+not-found`, qual método do `router` usar): `references/navegacao.md`. Quem navega é a **View**; a ViewModel só expõe estado.
+- **API / `fetch` / `axios` / `FlatList`**: `references/consumo_apis.md`. A chamada HTTP fica em Repository (Simplificado) ou em `infra/` atrás de interface (Sofisticado); sempre cheque `response.ok`; `axios` não precisa de `@types/axios`.
+- **Câmera, localização, SQLite etc.**: `references/recursos_nativos.md`. Componente visual na View; hook de permissão na ViewModel; API não visual em `infra/` com interface no Model. O Model nunca importa `expo-*`.
+
+---
+
 ## ✅ Checklist de autocorreção
 
 Antes de entregar, revise o que escreveu:
@@ -207,6 +215,9 @@ Antes de entregar, revise o que escreveu:
 - [ ] Há tela em `src/app` sem ViewModel correspondente? → crie o hook.
 - [ ] Há algo em `src/app` que não é tela nem layout? → mova para fora.
 - [ ] Os imports usam `@/` e a caixa do nome do arquivo está correta?
+- [ ] A ViewModel importa `expo-router`/`router`? → a navegação é da View.
+- [ ] Há `fetch`/`axios` ou `expo-*` (não visual) no Model, na ViewModel ou na View? → mova para Repository/`infra/`.
+- [ ] Parâmetros de rota foram convertidos (`Number(id)`) e o valor inválido tratado?
 - [ ] Serviços são criados **uma vez** (módulo ou factory), não a cada render?
 - [ ] A tela trata loading, erro e vazio? A senha usa `secureTextEntry`?
 - [ ] Rodou `tsc`/testes/app (ou avisou o que não foi verificado)?
