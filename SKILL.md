@@ -1,95 +1,96 @@
 ---
 name: skill_mvvm_simplificado
-description: Use when creating, editing, or reviewing any React Native or Expo application code. This skill enforces the simplified MVVM architecture exactly as taught in the PDM course (Programação para Dispositivos Móveis). MUST be followed whenever creating screens, components, services, entities, or viewmodels. Apply when the user mentions tela, componente, serviço, entidade, ViewModel, hook, autenticação, navegação, estado, ou qualquer código de aplicação móvel. Do NOT allow mixing responsibilities between layers.
+description: Use when creating, editing or reviewing React Native / Expo (Expo Router) application code - screens, components, services, entities, repositories, use cases, ViewModels/hooks, authentication, navigation or state. Enforces the MVVM architecture taught in the PDM course (Programação para Dispositivos Móveis), in its Simplified (3 layers) and Sophisticated (use cases + infra + factories) versions. Do NOT allow mixing responsibilities between layers.
 ---
 
-# MVVM Simplificado — Padrão do Professor (PDM)
+# MVVM — Padrão da disciplina PDM
 
 ## Regra Central
 
-**Todo código de aplicação React Native / Expo DEVE seguir MVVM Simplificado exatamente como ensinado na disciplina PDM.**
+Todo código de aplicação React Native / Expo DEVE separar **View**, **ViewModel** e **Model**. Evite o "CR — Codifica & Remenda" (Big Tripe): interface, regras de negócio, chamadas de API e navegação num único arquivo.
 
-Evite o padrão "CR — Codifica & Remenda" (também chamado "Big Tripe"): concentrar tudo — interface, regras de negócio e navegação — em um único arquivo. Isso torna o código difícil de testar, reaproveitar e evoluir.
+Existem duas versões. Escolha pela tabela:
 
----
+| Situação | Versão | Referência |
+|---|---|---|
+| Projeto novo, poucas telas, regra de negócio simples | **Simplificado** (3 camadas) | este arquivo |
+| Há regras de negócio além de CRUD, troca de backend prevista, ou o usuário pediu testes/"sofisticado" | **Sofisticado** (UseCases + Infra + Factories) | `examples/mvvm_sofisticado.md` |
 
-## As 3 Camadas
-
-### Model
-Concentra todo o domínio da aplicação. É dividido em:
-
-- **`entities/`** — tipos e entidades puras (ex: `User.ts`)
-- **`services/`** — regras de negócio e operações específicas (ex: `AuthService.ts`)
-- **`repositories/`** — abstração de acesso a dados (ex: `TaskRepository.ts`)
-
-O Model **não conhece** React, hooks nem nada de UI.
-
-### ViewModel
-Implementada como **Custom Hook** (ex: `useLoginViewModel.ts`).
-
-Responsabilidades:
-- Gerenciar o estado da tela (`loading`, `error`, dados)
-- Expor as ações que a View pode chamar (`handleLogin`, `handleLogout`)
-- Chamar os serviços/repositórios do Model
-
-A ViewModel **não contém** elementos de interface (sem JSX, sem componentes visuais).
-
-### View
-Representada pelas telas e componentes (arquivos `.tsx`).
-
-Responsabilidades:
-- Importar a ViewModel e consumir seu estado e ações
-- Renderizar o conteúdo com base no estado
-- Estados de UI puros (como valor digitado num campo) podem ficar na View
-
-A View **não contém** lógica de negócio nem chama serviços diretamente.
+Se o projeto já usa uma versão, **continue nela**. Não misture as duas na mesma feature. Migre para o sofisticado quando a ViewModel começar a ter `if` de regra de negócio ou precisar trocar o backend.
 
 ---
 
-## 🔄 Fluxo de Trabalho e Testes (Obrigatório)
+## Convenções (valem para as duas versões)
 
-Quando o usuário pedir uma nova funcionalidade ou tela, você DEVE seguir a ordem de implementação abaixo. 
-
-Para **CADA** etapa, aplique o ciclo de teste rigoroso:
-**Criou ➔ Testou ➔ Deu erro? Consertou ➔ Testou de novo ➔ Funcionou? Vai para o próximo.**
-*NUNCA avance para a próxima funcionalidade ou camada sem que a atual esteja validada e funcionando.*
-
-### Ordem de Implementação:
-1. **Camada Model (Domínio):** Defina a Entidade e o Serviço/Repositório primeiro.
-   - *Validação:* A regra de negócio está correta? A lógica lida com cenários de falha? Só avance quando o serviço estiver sólido.
-2. **Camada ViewModel:** Crie o Custom Hook importando o Model.
-   - *Validação:* O estado (loading, error, sucesso) está mudando na ordem certa? O hook expõe as actions corretamente? Só avance se estiver perfeito.
-3. **Camada View:** Desenhe a tela consumindo a ViewModel.
-   - *Validação:* Teste todos os cenários visuais (estado de erro renderiza algo? loading mostra spinner?). Funcionou? Funcionalidade entregue.
+- **Navegação:** Expo Router. Em `src/app` ficam **somente telas e `_layout.tsx`**. Componentes, hooks, dados e tipos ficam em outras pastas de `src/`.
+- **Imports:** use o alias `@/` (aponta para `src/`), nunca `../../..`.
+- **Nomes de arquivo:** o import deve ter a **mesma caixa** do arquivo (`User.ts` → `@/model/entities/User`). Em `src/app`, arquivos de rota em minúsculas com hífen (`meus-favoritos.tsx`).
+- **Componentes:** `const Tela = () => {...}; export default Tela;` (arrow function, `export default` separado). Telas e rotas exigem `export default`; componentes em `view/components` usam `export` nomeado.
+- **Estilo:** `StyleSheet.create` no **fim** do arquivo, com nomes que descrevem o papel (`card`, `title`), não a aparência.
+- **Botões:** prefira `Pressable`. `Button` só em protótipo rápido (não aceita `style`).
+- **Senha:** todo `TextInput` de senha leva `secureTextEntry`.
+- **Identificadores** em inglês (`loading`, `error`, `handleLogin`); textos de UI em português.
+- **ViewModel = Custom Hook** `useXxxViewModel` (camelCase, começa com `use`). Componentes em PascalCase.
 
 ---
 
-## Estrutura de Pastas Obrigatória
+## Versão Simplificada — 3 camadas
 
+### Model (`src/model/`)
+Domínio da aplicação, sem React/Expo/hooks/JSX.
+- `entities/` — tipos e entidades puras (`User.ts`)
+- `services/` — regras de negócio e operações (`AuthService.ts`, implementação concreta)
+- `repositories/` — acesso a dados (`TaskRepository.ts`)
+
+### ViewModel (`src/viewmodel/`)
+Custom Hook. Gerencia o estado da tela (`loading`, `error`, dados), expõe ações (`handleLogin`) e chama o Model. **Sem JSX nem componentes visuais.**
+
+### View (`src/app/` e `src/view/components/`)
+Renderiza o estado e dispara ações da ViewModel. Pode guardar **estado de UI puro** (texto digitado, aba selecionada). **Sem** regra de negócio, `fetch`/`axios`, nem `try/catch`.
+
+### Estrutura de pastas
 ```
 src/
-├── app/                        ← telas gerenciadas pelo Expo Router
-│   ├── _layout.tsx             
-│   └── index.tsx               ← View
+├── app/                        ← Views: telas e rotas (Expo Router)
+│   ├── _layout.tsx
+│   ├── index.tsx
+│   └── home.tsx
 ├── model/
-│   ├── entities/
-│   │   └── User.ts             ← Entidades puros
-│   ├── services/
-│   │   └── AuthService.ts      ← Regras de negócio
+│   ├── entities/User.ts
+│   ├── services/AuthService.ts
 │   └── repositories/
-├── viewmodel/
-│   └── useLoginViewModel.ts    ← Custom Hook = ViewModel
-└── view/
-    └── components/             
+├── viewmodel/useLoginViewModel.ts
+└── view/components/            ← componentes reutilizáveis
 ```
-
-> **Dica do professor:** use `camelCase` para hooks e `PascalCase` para componentes React.
 
 ---
 
-## Exemplo Completo (exatamente como o professor ensina)
+## Fluxo de trabalho obrigatório
 
-### Etapa 1 — Entidade no Model
+Ordem: **Model → ViewModel → View**. Em cada etapa: criou → **verificou** → deu erro? consertou → verificou de novo → só então avança.
+
+"Verificou" significa executar algo de verdade, nunca apenas declarar que funciona:
+1. **Model:** rode `npx tsc --noEmit` e teste o service (Jest) cobrindo sucesso **e** falha.
+2. **ViewModel:** teste o hook com `renderHook` (`@testing-library/react-native`): `loading` liga/desliga, `error` é preenchido na falha, ação funciona.
+3. **View:** rode o app (`npx expo start`) ou teste de componente e confira os estados: loading mostra indicador, erro aparece, vazio tem mensagem.
+
+Se o projeto não tem Jest configurado, rode ao menos `npx tsc --noEmit` e o lint, e diga ao usuário o que **não** foi testado.
+
+---
+
+## Estados da tela
+
+Toda tela que carrega dados trata os 4 estados: **loading**, **erro** (com retry quando fizer sentido), **vazio** e **sucesso**. Detalhes em `references/padroes_estado.md`.
+
+| Estado de UI (fica na View) | Estado da aplicação (fica na ViewModel) |
+|---|---|
+| Texto digitado num campo | `userId`, lista de dados |
+| Aba selecionada | `loading`, `error` |
+
+---
+
+## Exemplo completo (Simplificado)
+
 ```typescript
 // src/model/entities/User.ts
 export type User = {
@@ -98,44 +99,51 @@ export type User = {
 };
 ```
 
-### Etapa 2 — Service no Model
 ```typescript
 // src/model/services/AuthService.ts
-import { User } from "../entities/user";
+import { User } from "@/model/entities/User";
 
 export class AuthService {
   async login(email: string, password: string): Promise<User> {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     if (email !== "user@example.com" || password !== "password") {
-      throw new Error("invalid credentials");
+      throw new Error("Credenciais inválidas");
     }
     return { uID: "123", userName: "user123" };
   }
 }
 ```
 
-### Etapa 3 — ViewModel (Custom Hook)
 ```typescript
 // src/viewmodel/useLoginViewModel.ts
 import { useState } from "react";
-import { User } from "../model/entities/user";
-import { AuthService } from "../model/services/authService";
+import { AuthService } from "@/model/services/AuthService";
 
-export function useLoginViewModel() {
+const authService = new AuthService(); // criado uma vez, fora do render
+
+export type LoginState = {
+  userId: string | null;
+  loading: boolean;
+  error: string | null;
+};
+
+export type LoginActions = {
+  handleLogin: (email: string, password: string) => Promise<void>;
+};
+
+export function useLoginViewModel(): LoginState & LoginActions {
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const service = new AuthService();
 
   async function handleLogin(email: string, password: string) {
     try {
       setLoading(true);
       setError(null);
-      const user = await service.login(email, password);
+      const user = await authService.login(email, password);
       setUserId(user.uID);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha inesperada.");
     } finally {
       setLoading(false);
     }
@@ -145,15 +153,14 @@ export function useLoginViewModel() {
 }
 ```
 
-### Etapa 4 — View consumindo a ViewModel
 ```tsx
 // src/app/index.tsx
 import { router } from "expo-router";
 import { useEffect, useState } from "react";
-import { Button, StyleSheet, Text, TextInput, View } from "react-native";
-import { useLoginViewModel } from "../viewmodel/useLoginViewModel";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useLoginViewModel } from "@/viewmodel/useLoginViewModel";
 
-const Index = () => {
+const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { userId, loading, error, handleLogin } = useLoginViewModel();
@@ -162,47 +169,67 @@ const Index = () => {
     if (userId) router.replace("/home");
   }, [userId]);
 
-  if (loading) return <Text>loading...</Text>;
+  if (loading) return <ActivityIndicator style={styles.loading} />;
 
   return (
     <View style={styles.container}>
-      <TextInput style={styles.input} value={email} onChangeText={setEmail} />
-      <TextInput style={styles.input} value={password} onChangeText={setPassword} />
-      <Button title="login" onPress={() => handleLogin(email, password)} />
-      {error && <Text>error: {error}</Text>}
+      <TextInput style={styles.input} placeholder="E-mail" value={email} onChangeText={setEmail} autoCapitalize="none" />
+      <TextInput style={styles.input} placeholder="Senha" value={password} onChangeText={setPassword} secureTextEntry />
+      <Pressable style={styles.button} onPress={() => handleLogin(email, password)}>
+        <Text style={styles.buttonText}>Entrar</Text>
+      </Pressable>
+      {error && <Text style={styles.error}>{error}</Text>}
     </View>
   );
 };
-const styles = StyleSheet.create({ /* estilos */ });
-export default Index;
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: "center", padding: 24, gap: 12 },
+  loading: { flex: 1 },
+  input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 8, padding: 12 },
+  button: { backgroundColor: "#4630EB", borderRadius: 8, padding: 12, alignItems: "center" },
+  buttonText: { color: "#fff", fontWeight: "600" },
+  error: { color: "red" },
+});
+
+export default Login;
 ```
 
 ---
 
-## O que é estado da aplicação vs. estado de UI?
+## Navegação, dados remotos e recursos nativos
 
-| Estado de UI (fica na View) | Estado da aplicação (fica na ViewModel) |
-|---|---|
-| Valor digitado num campo de texto | `userId` (usuário autenticado) |
-| Aba selecionada | `loading` (operação em andamento) |
-
----
-
-## ✅ Checklist de Autocorreção (Self-Correction)
-
-**ATENÇÃO AGENTE:** Antes de entregar o código final ao usuário, faça uma revisão rigorosa do que você acabou de escrever:
-
-- [ ] A minha **View** tem algum `if` de regra de negócio? *(Se sim, mova a regra para a ViewModel/Model).*
-- [ ] A minha **ViewModel** importa elementos visuais como `<View>` ou `<Text>`? *(Se sim, remova. O hook deve ser puro).*
-- [ ] Eu usei `fetch()` ou `axios` diretamente dentro do arquivo da **View**? *(Se sim, mova para um Repository/Service).*
-- [ ] O **Model** importa algo do React ou Expo? *(Se sim, remova. O Model é puro).*
-- [ ] Eu criei telas sem uma ViewModel correspondente? *(Se sim, crie o Hook).*
-- [ ] O ciclo "Criou -> Testou -> Consertou" foi respeitado antes de avançar?
-
-Se você identificar qualquer violação acima, **reconstrua e corrija o código** autonomamente antes de declará-lo pronto para o usuário.
+- **Navegação** (Expo Router, Tabs/Drawer, rotas dinâmicas, `+not-found`, qual método do `router` usar): `references/navegacao.md`. Quem navega é a **View**; a ViewModel só expõe estado.
+- **API / `fetch` / `axios` / `FlatList`**: `references/consumo_apis.md`. A chamada HTTP fica em Repository (Simplificado) ou em `infra/` atrás de interface (Sofisticado); sempre cheque `response.ok`; `axios` não precisa de `@types/axios`.
+- **Câmera, localização, SQLite etc.**: `references/recursos_nativos.md`. Componente visual na View; hook de permissão na ViewModel; API não visual em `infra/` com interface no Model. O Model nunca importa `expo-*`.
 
 ---
 
-## Evolução futura (MVVM Sofisticado)
+## ✅ Checklist de autocorreção
 
-Após dominar o MVVM Simplificado, consulte o arquivo `examples/mvvm_sofisticado.md` na pasta da skill para evoluir o código adicionando Casos de Uso (UseCases) e uma camada de Infraestrutura, isolando o Model completamente.
+Antes de entregar, revise o que escreveu:
+
+- [ ] A **View** tem `if` de regra de negócio, `try/catch`, `fetch`/`axios`? → mova para ViewModel/Model.
+- [ ] A **ViewModel** importa `View`, `Text` ou qualquer JSX? → remova.
+- [ ] O **Model** importa algo de `react`, `react-native` ou `expo-*`? → remova.
+- [ ] Há tela em `src/app` sem ViewModel correspondente? → crie o hook.
+- [ ] Há algo em `src/app` que não é tela nem layout? → mova para fora.
+- [ ] Os imports usam `@/` e a caixa do nome do arquivo está correta?
+- [ ] A ViewModel importa `expo-router`/`router`? → a navegação é da View.
+- [ ] Há `fetch`/`axios` ou `expo-*` (não visual) no Model, na ViewModel ou na View? → mova para Repository/`infra/`.
+- [ ] Parâmetros de rota foram convertidos (`Number(id)`) e o valor inválido tratado?
+- [ ] Serviços são criados **uma vez** (módulo ou factory), não a cada render?
+- [ ] A tela trata loading, erro e vazio? A senha usa `secureTextEntry`?
+- [ ] Rodou `tsc`/testes/app (ou avisou o que não foi verificado)?
+
+Se achar qualquer violação, **corrija antes de declarar pronto**.
+
+---
+
+## Evolução (MVVM Sofisticado)
+
+Veja `examples/mvvm_sofisticado.md` (UseCases, interfaces no Model, Infra, Factories, erros de domínio), `references/injecao_dependencias.md` e `references/padroes_estado.md`. Ao migrar: o service concreto vira interface em `model/services/`, a implementação vai para `infra/`, a regra de negócio vai para um UseCase e a ViewModel passa a receber o UseCase por parâmetro.
+
+## Divergências em relação ao livro da disciplina
+
+Esta skill segue o livro, com estas correções deliberadas: caixa dos imports corrigida; UseCase único e consistente (`IAuthUseCases`); pasta `factories/` no lugar de `di/`; UseCases dentro de `model/usecases/`; erros de domínio explícitos; Factory sem recriar dependências a cada render; `Pressable` e `secureTextEntry`. Se o usuário pedir a estrutura literal do livro, siga o pedido dele.

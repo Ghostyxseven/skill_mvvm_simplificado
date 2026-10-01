@@ -1,107 +1,99 @@
-# MVVM Simplificado — React + TypeScript
+# MVVM Simplificado — React + TypeScript (web)
+
+> Variante **web** (usa `<p>`, `<ul>`). A skill é voltada a React Native/Expo; use este arquivo só se o projeto for React para web. A divisão de camadas e os nomes são os mesmos do `expo.md`: o que muda é apenas a View.
 
 ## Estrutura de pastas
 
 ```
 src/
-├── models/
-│   └── user.ts
-├── repositories/
-│   └── userRepository.ts
-├── viewmodels/
-│   └── useUserViewModel.ts
-└── pages/ (ou screens/)
-    └── UserPage.tsx
+├── model/
+│   ├── entities/User.ts
+│   └── repositories/UserRepository.ts
+├── viewmodel/useUsersViewModel.ts
+└── pages/UsersPage.tsx          ← View
 ```
 
 ## Model
 
 ```typescript
-// models/user.ts
-export interface User {
+// src/model/entities/User.ts
+export type User = {
   id: string;
-  nome: string;
+  name: string;
   email: string;
-}
+};
 ```
 
-## Repository
-
 ```typescript
-// repositories/userRepository.ts
-import { User } from '../models/user';
+// src/model/repositories/UserRepository.ts
+import { User } from "@/model/entities/User";
 
-export const userRepository = {
-  async buscarTodos(): Promise<User[]> {
-    const response = await fetch('/api/users');
+export class UserRepository {
+  async findAll(): Promise<User[]> {
+    const response = await fetch("/api/users");
+    if (!response.ok) throw new Error("Não foi possível carregar os usuários.");
     return response.json();
-  },
-
-  async buscarPorId(id: string): Promise<User> {
-    const response = await fetch(`/api/users/${id}`);
-    return response.json();
-  },
-};
+  }
+}
 ```
 
 ## ViewModel (hook)
 
 ```typescript
-// viewmodels/useUserViewModel.ts
-import { useState, useEffect } from 'react';
-import { User } from '../models/user';
-import { userRepository } from '../repositories/userRepository';
+// src/viewmodel/useUsersViewModel.ts
+import { useCallback, useState } from "react";
+import { User } from "@/model/entities/User";
+import { UserRepository } from "@/model/repositories/UserRepository";
 
-interface UserViewModelState {
-  usuarios: User[];
-  carregando: boolean;
-  erro: string | null;
-}
+const userRepository = new UserRepository();
 
-export function useUserViewModel() {
-  const [state, setState] = useState<UserViewModelState>({
-    usuarios: [],
-    carregando: false,
-    erro: null,
-  });
+export function useUsersViewModel() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  async function carregarUsuarios() {
-    setState(s => ({ ...s, carregando: true, erro: null }));
+  const loadUsers = useCallback(async () => {
     try {
-      const usuarios = await userRepository.buscarTodos();
-      setState(s => ({ ...s, usuarios, carregando: false }));
-    } catch (e) {
-      setState(s => ({ ...s, erro: 'Erro ao carregar usuários', carregando: false }));
+      setLoading(true);
+      setError(null);
+      setUsers(await userRepository.findAll());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha inesperada.");
+    } finally {
+      setLoading(false);
     }
-  }
-
-  useEffect(() => {
-    carregarUsuarios();
   }, []);
 
-  return { ...state, carregarUsuarios };
+  return { users, loading, error, loadUsers };
 }
 ```
 
 ## View
 
 ```tsx
-// pages/UserPage.tsx
-import { useUserViewModel } from '../viewmodels/useUserViewModel';
+// src/pages/UsersPage.tsx
+import { useEffect } from "react";
+import { useUsersViewModel } from "@/viewmodel/useUsersViewModel";
 
-export function UserPage() {
-  const { usuarios, carregando, erro, carregarUsuarios } = useUserViewModel();
+const UsersPage = () => {
+  const { users, loading, error, loadUsers } = useUsersViewModel();
 
-  if (carregando) return <p>Carregando...</p>;
-  if (erro) return <p>{erro} <button onClick={carregarUsuarios}>Tentar novamente</button></p>;
-  if (usuarios.length === 0) return <p>Nenhum usuário encontrado.</p>;
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  if (loading) return <p>Carregando...</p>;
+  if (error) return <p>{error} <button onClick={loadUsers}>Tentar novamente</button></p>;
+  if (users.length === 0) return <p>Nenhum usuário encontrado.</p>;
 
   return (
     <ul>
-      {usuarios.map(u => (
-        <li key={u.id}>{u.nome} — {u.email}</li>
+      {users.map((user) => (
+        <li key={user.id}>{user.name} — {user.email}</li>
       ))}
     </ul>
   );
-}
+};
+
+export default UsersPage;
 ```

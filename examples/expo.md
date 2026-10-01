@@ -1,107 +1,125 @@
-# MVVM Simplificado — Expo / React Native
+# MVVM Simplificado — Expo / React Native (lista de dados com 4 estados)
+
+Exemplo de uma lista que busca dados remotos e trata **loading, erro, vazio e sucesso**.
 
 ## Estrutura de pastas
 
 ```
 src/
-├── models/
-│   └── user.ts
-├── repositories/
-│   └── userRepository.ts
-├── viewmodels/
-│   └── useUserViewModel.ts
-└── screens/
-    └── UserScreen.tsx
+├── app/
+│   ├── _layout.tsx
+│   └── users.tsx               ← View (rota /users)
+├── model/
+│   ├── entities/User.ts
+│   └── repositories/UserRepository.ts
+└── viewmodel/useUsersViewModel.ts
 ```
 
 ## Model
 
 ```typescript
-// models/user.ts
-export interface User {
+// src/model/entities/User.ts
+export type User = {
   id: string;
-  nome: string;
-  avatar: string;
-}
+  name: string;
+};
 ```
 
-## Repository
-
 ```typescript
-// repositories/userRepository.ts
-import { User } from '../models/user';
+// src/model/repositories/UserRepository.ts
+import { User } from "@/model/entities/User";
 
-export const userRepository = {
-  async buscarTodos(): Promise<User[]> {
-    const response = await fetch('https://api.exemplo.com/users');
-    if (!response.ok) throw new Error('Falha na requisição');
+export class UserRepository {
+  async findAll(): Promise<User[]> {
+    const response = await fetch("https://api.exemplo.com/users");
+    if (!response.ok) throw new Error("Não foi possível carregar os usuários.");
     return response.json();
-  },
-};
+  }
+}
 ```
 
 ## ViewModel
 
 ```typescript
-// viewmodels/useUserViewModel.ts
-import { useState, useCallback } from 'react';
-import { User } from '../models/user';
-import { userRepository } from '../repositories/userRepository';
+// src/viewmodel/useUsersViewModel.ts
+import { useCallback, useState } from "react";
+import { User } from "@/model/entities/User";
+import { UserRepository } from "@/model/repositories/UserRepository";
 
-export function useUserViewModel() {
-  const [usuarios, setUsuarios] = useState<User[]>([]);
-  const [carregando, setCarregando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
+const userRepository = new UserRepository();
 
-  const carregarUsuarios = useCallback(async () => {
-    setCarregando(true);
-    setErro(null);
+export function useUsersViewModel() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadUsers = useCallback(async () => {
     try {
-      const dados = await userRepository.buscarTodos();
-      setUsuarios(dados);
-    } catch {
-      setErro('Não foi possível carregar os usuários.');
+      setLoading(true);
+      setError(null);
+      setUsers(await userRepository.findAll());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha inesperada.");
     } finally {
-      setCarregando(false);
+      setLoading(false);
     }
   }, []);
 
-  return { usuarios, carregando, erro, carregarUsuarios };
+  return { users, loading, error, loadUsers };
 }
 ```
 
-## Screen (View)
+## View
 
 ```tsx
-// screens/UserScreen.tsx
-import { useEffect } from 'react';
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
-import { useUserViewModel } from '../viewmodels/useUserViewModel';
+// src/app/users.tsx
+import { useEffect } from "react";
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { useUsersViewModel } from "@/viewmodel/useUsersViewModel";
 
-export function UserScreen() {
-  const { usuarios, carregando, erro, carregarUsuarios } = useUserViewModel();
+const Users = () => {
+  const { users, loading, error, loadUsers } = useUsersViewModel();
 
   useEffect(() => {
-    carregarUsuarios();
-  }, []);
+    loadUsers();
+  }, [loadUsers]);
 
-  if (carregando) return <ActivityIndicator />;
+  if (loading) return <ActivityIndicator style={styles.center} />;
 
-  if (erro) return (
-    <View>
-      <Text>{erro}</Text>
-      <TouchableOpacity onPress={carregarUsuarios}>
-        <Text>Tentar novamente</Text>
-      </TouchableOpacity>
-    </View>
-  );
+  if (error) {
+    return (
+      <View style={styles.center}>
+        <Text>{error}</Text>
+        <Pressable style={styles.button} onPress={loadUsers}>
+          <Text style={styles.buttonText}>Tentar novamente</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  if (users.length === 0) {
+    return (
+      <View style={styles.center}>
+        <Text>Nenhum usuário encontrado.</Text>
+      </View>
+    );
+  }
 
   return (
     <FlatList
-      data={usuarios}
-      keyExtractor={u => u.id}
-      renderItem={({ item }) => <Text>{item.nome}</Text>}
+      data={users}
+      keyExtractor={(user) => user.id}
+      renderItem={({ item }) => <Text style={styles.item}>{item.name}</Text>}
     />
   );
-}
+};
+
+const styles = StyleSheet.create({
+  center: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
+  item: { padding: 16, borderBottomWidth: 1, borderBottomColor: "#eee" },
+  button: { backgroundColor: "#4630EB", borderRadius: 8, paddingVertical: 10, paddingHorizontal: 20 },
+  buttonText: { color: "#fff", fontWeight: "600" },
+});
+
+export default Users;
 ```

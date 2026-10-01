@@ -1,119 +1,215 @@
-# MVVM Sofisticado — Padrão do Professor (PDM)
+# MVVM Sofisticado — Padrão PDM
 
-Quando a aplicação cresce, o MVVM Simplificado pode ser evoluído para o **MVVM Sofisticado**. O professor de PDM ensina esta arquitetura em 5 camadas (mais a injeção de dependências).
+Evolução do MVVM Simplificado para aplicações maiores: a regra de negócio vai para **UseCases**, o acesso externo vai para **Infra**, e as peças são montadas por **Factories** (injeção de dependências). Dependências sempre apontam para abstrações.
 
-Nesta versão, optamos por manter o nome clássico **`model`** (como a camada de Domínio), pois é mais bonito e fiel à sigla MVVM.
+## Camadas
 
-## As 5 Camadas + Factories
+1. **View** — renderiza estado e dispara ações.
+2. **ViewModel** — hook que guarda estado da tela e traduz erros em texto. Sem regra de negócio.
+3. **UseCases** — orquestram regras de negócio (dentro de `model/usecases/`).
+4. **Model (Domínio)** — entidades, erros de domínio e **interfaces** de serviços/repositórios/usecases. Puro: sem React, Expo ou Firebase.
+5. **Infra** — implementações concretas (Firebase, Axios, SQLite) que **traduzem erros técnicos em erros de domínio**.
+6. **Factories** — montam Infra → UseCase → ViewModel.
 
-1. **View** – Componentes React Native responsáveis apenas por renderização;
-2. **ViewModel** – Hooks que gerenciam estado da View e expõem Actions;
-3. **UseCases** – Camada de orquestração de regras de negócio complexas;
-4. **Model (Domínio)** – Entidades, interfaces de serviços e repositórios puros;
-5. **Infraestrutura** – Implementações concretas dos Repositórios e Serviços (ex: Firebase, Axios);
-6. **Factories** – Onde ocorre a Injeção de Dependências, isolando a View da Infraestrutura.
+Fluxo de dependência: `View → ViewModel → UseCase → Model(interfaces) ← Infra`. A View **não importa** `infra` nem `model/usecases`.
 
----
-
-## Estrutura de Pastas
+## Estrutura de pastas
 
 ```
 src/
-├── app/                        ← Telas (Expo Router)
-│   ├── index.tsx               ← View
+├── app/                          ← Views (Expo Router)
+│   ├── index.tsx
 │   └── home.tsx
-├── model/                      ← Model/Domínio (Não conhece React/Firebase)
-│   ├── entities/
-│   │   └── User.ts             ← Entidades Puras
-│   ├── services/
-│   │   └── IAuthService.ts     ← Interfaces de Serviços
-│   ├── repositories/
-│   │   └── IUserRepository.ts  ← Interfaces de Repositórios
+├── model/
+│   ├── entities/User.ts
+│   ├── errors/DomainErrors.ts
+│   ├── services/IAuthService.ts
+│   ├── repositories/IUserRepository.ts
 │   └── usecases/
-│       ├── IAuthUseCases.ts    ← Interfaces de Casos de Uso
-│       └── AuthUseCases.ts     ← Implementação das Regras de Negócio
-├── viewmodel/
-│   └── useLoginViewModel.ts    ← ViewModel (Hooks)
-├── infra/                      ← Infraestrutura (Firebase, APIs, SQLite)
-│   ├── services/
-│   │   └── FirebaseAuthService.ts ← Implementação concreta
-│   └── repositories/
-│       └── FirestoreUserRepository.ts
-└── factories/                  ← Fábricas (Injeção de dependências)
-    └── loginFactory.ts         
+│       ├── IAuthUseCases.ts
+│       └── AuthUseCases.ts
+├── viewmodel/useLoginViewModel.ts
+├── infra/
+│   ├── services/FirebaseAuthService.ts
+│   └── repositories/FirestoreUserRepository.ts
+├── factories/loginFactory.ts
+└── view/components/
 ```
 
 ---
 
-## Exemplo: Fluxo de Autenticação
-
-### 1. Model - Entidades e Interfaces
+## 1. Model — entidade, erros e contratos
 
 ```typescript
 // src/model/entities/User.ts
-export class User {
-  constructor(
-    public readonly uID: string,
-    public readonly userName: string
-  ) {}
-}
+export type User = {
+  uID: string;
+  userName: string;
+};
+```
 
+```typescript
+// src/model/errors/DomainErrors.ts
+export class DomainError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = new.target.name;
+  }
+}
+export class ValidationError extends DomainError {}
+export class AuthFailedError extends DomainError {}
+```
+
+```typescript
 // src/model/services/IAuthService.ts
-import { User } from "../entities/User";
+import { User } from "@/model/entities/User";
+
 export interface IAuthService {
-  login(email: string, password: string): Promise<User>;
+  login(userName: string, password: string): Promise<User>;
+  signup(userName: string, password: string): Promise<User>;
+  logout(): Promise<void>;
+  onAuthStateChanged(callback: (user: User | null) => void): void;
 }
 ```
 
-### 2. Model - Casos de Uso (Regras de Negócio)
+```typescript
+// src/model/repositories/IUserRepository.ts
+import { User } from "@/model/entities/User";
+
+export interface IUserRepository {
+  save(user: User): Promise<void>;
+  findById(id: string): Promise<User | null>;
+}
+```
+
+## 2. Model — UseCases (regras de negócio)
+
+```typescript
+// src/model/usecases/IAuthUseCases.ts
+import { User } from "@/model/entities/User";
+
+export interface IAuthUseCases {
+  login(userName: string, password: string): Promise<User>;
+  signup(userName: string, password: string): Promise<User>;
+  logout(): Promise<void>;
+  onAuthStateChanged(callback: (user: User | null) => void): void;
+}
+```
 
 ```typescript
 // src/model/usecases/AuthUseCases.ts
-import { IAuthService } from "../services/IAuthService";
-import { User } from "../entities/User";
-
-export interface IAuthUseCases {
-  login(email: string, password: string): Promise<User>;
-}
+import { User } from "@/model/entities/User";
+import { ValidationError } from "@/model/errors/DomainErrors";
+import { IUserRepository } from "@/model/repositories/IUserRepository";
+import { IAuthService } from "@/model/services/IAuthService";
+import { IAuthUseCases } from "./IAuthUseCases";
 
 export class AuthUseCases implements IAuthUseCases {
-  // Injeção de dependência baseada em abstração
-  constructor(private authService: IAuthService) {}
+  constructor(
+    private authService: IAuthService,
+    private userRepository: IUserRepository
+  ) {}
 
-  async login(email: string, password: string): Promise<User> {
-    if (!email || !password) {
-      throw new Error("Validation Error: Email and password required");
-    }
-    // Orquestração: salvar em repositório local, registrar login, etc
-    return this.authService.login(email, password);
+  async login(userName: string, password: string): Promise<User> {
+    this.validate(userName, password);
+    return this.authService.login(userName, password);
+  }
+
+  async signup(userName: string, password: string): Promise<User> {
+    this.validate(userName, password);
+    const user = await this.authService.signup(userName, password);
+    await this.userRepository.save(user); // orquestração: cria também o registro do usuário
+    return user;
+  }
+
+  logout(): Promise<void> {
+    return this.authService.logout();
+  }
+
+  onAuthStateChanged(callback: (user: User | null) => void): void {
+    this.authService.onAuthStateChanged(callback);
+  }
+
+  private validate(userName: string, password: string): void {
+    if (!userName) throw new ValidationError("Informe o usuário.");
+    if (!password) throw new ValidationError("Informe a senha.");
   }
 }
 ```
 
-### 3. Infraestrutura (Implementação Concreta)
+> Mesmo quando a interface do UseCase parece repetir a do service, mantenha o UseCase: é nele que a regra cresce (aqui, `signup` também salva o usuário). Ao aprender o padrão, crie sempre os UseCases.
+
+## 3. Infra — implementação concreta e tradução de erros
 
 ```typescript
 // src/infra/services/FirebaseAuthService.ts
-import { IAuthService } from "../../model/services/IAuthService";
-import { User } from "../../model/entities/User";
+import { User } from "@/model/entities/User";
+import { AuthFailedError } from "@/model/errors/DomainErrors";
+import { IAuthService } from "@/model/services/IAuthService";
 
 export class FirebaseAuthService implements IAuthService {
-  async login(email: string, password: string): Promise<User> {
-    // Código real do Firebase auth iria aqui
-    return new User("123", "User Name");
+  async login(userName: string, password: string): Promise<User> {
+    try {
+      // Aqui entraria o SDK real: signInWithEmailAndPassword(auth, userName, password)
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (userName !== "user@example.com" || password !== "password") {
+        throw new Error("auth/invalid-credential"); // erro técnico do SDK
+      }
+      return { uID: "123", userName: "user123" };
+    } catch {
+      // A Infra nunca deixa vazar erro de biblioteca: traduz para erro de domínio.
+      throw new AuthFailedError("Usuário ou senha inválidos.");
+    }
+  }
+
+  async signup(userName: string, password: string): Promise<User> {
+    throw new AuthFailedError("signup ainda não implementado.");
+  }
+
+  async logout(): Promise<void> {}
+
+  onAuthStateChanged(callback: (user: User | null) => void): void {
+    callback(null);
   }
 }
 ```
 
-### 4. ViewModel
+```typescript
+// src/infra/repositories/FirestoreUserRepository.ts
+import { User } from "@/model/entities/User";
+import { IUserRepository } from "@/model/repositories/IUserRepository";
+
+export class FirestoreUserRepository implements IUserRepository {
+  async save(user: User): Promise<void> {
+    console.log("saving user...", user); // setDoc(...) no Firestore real
+  }
+
+  async findById(id: string): Promise<User | null> {
+    return { uID: id, userName: "user123" };
+  }
+}
+```
+
+## 4. ViewModel
 
 ```typescript
 // src/viewmodel/useLoginViewModel.ts
 import { useState } from "react";
-import { IAuthUseCases } from "../model/usecases/AuthUseCases";
-import { User } from "../model/entities/User";
+import { DomainError } from "@/model/errors/DomainErrors";
+import { IAuthUseCases } from "@/model/usecases/IAuthUseCases";
 
-export function useLoginViewModel(authUseCases: IAuthUseCases) {
+export type LoginState = {
+  userId: string | null;
+  loading: boolean;
+  error: string | null;
+};
+
+export type LoginActions = {
+  handleLogin: (email: string, password: string) => Promise<void>;
+};
+
+export function useLoginViewModel(authUseCases: IAuthUseCases): LoginState & LoginActions {
+  const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -122,64 +218,93 @@ export function useLoginViewModel(authUseCases: IAuthUseCases) {
       setLoading(true);
       setError(null);
       const user = await authUseCases.login(email, password);
-      // Navegar ou salvar estado
-    } catch (err: any) {
-      setError(err.message);
+      setUserId(user.uID);
+    } catch (err) {
+      // Erro de domínio -> mensagem legível; qualquer outro -> mensagem genérica
+      setError(err instanceof DomainError ? err.message : "Falha inesperada.");
     } finally {
       setLoading(false);
     }
   }
 
-  return { loading, error, handleLogin };
+  return { userId, loading, error, handleLogin };
 }
 ```
 
-### 5. Factory (Injeção de Dependência)
+## 5. Factory (injeção de dependências)
 
 ```typescript
 // src/factories/loginFactory.ts
-import { FirebaseAuthService } from "../infra/services/FirebaseAuthService";
-import { AuthUseCases } from "../model/usecases/AuthUseCases";
-import { useLoginViewModel } from "../viewmodel/useLoginViewModel";
+import { FirestoreUserRepository } from "@/infra/repositories/FirestoreUserRepository";
+import { FirebaseAuthService } from "@/infra/services/FirebaseAuthService";
+import { AuthUseCases } from "@/model/usecases/AuthUseCases";
+import { useLoginViewModel } from "@/viewmodel/useLoginViewModel";
 
-export function makeLoginViewModel() {
-  const authService = new FirebaseAuthService();
-  const authUseCases = new AuthUseCases(authService);
+// Dependências montadas UMA vez, fora do render.
+const authUseCases = new AuthUseCases(
+  new FirebaseAuthService(),
+  new FirestoreUserRepository()
+);
+
+// Começa com "use" porque chama um hook: só pode ser usada no topo de um componente.
+export function useLoginViewModelFactory() {
   return useLoginViewModel(authUseCases);
 }
 ```
 
-### 6. View (Tela)
+## 6. View
 
 ```tsx
 // src/app/index.tsx
-import { useState } from "react";
-import { View, TextInput, Button, Text } from "react-native";
-import { makeLoginViewModel } from "../factories/loginFactory";
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useLoginViewModelFactory } from "@/factories/loginFactory";
 
-export default function LoginScreen() {
+const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  
-  // Consome a Factory em vez de importar os serviços diretamente
-  const { loading, error, handleLogin } = makeLoginViewModel();
+  const { userId, loading, error, handleLogin } = useLoginViewModelFactory();
+
+  useEffect(() => {
+    if (userId) router.replace("/home");
+  }, [userId]);
+
+  if (loading) return <ActivityIndicator style={styles.loading} />;
 
   return (
-    <View>
-      <TextInput value={email} onChangeText={setEmail} placeholder="Email" />
-      <TextInput value={password} onChangeText={setPassword} placeholder="Password" />
-      <Button title="Login" onPress={() => handleLogin(email, password)} />
-      {loading && <Text>Carregando...</Text>}
-      {error && <Text>{error}</Text>}
+    <View style={styles.container}>
+      <TextInput style={styles.input} placeholder="E-mail" value={email} onChangeText={setEmail} autoCapitalize="none" />
+      <TextInput style={styles.input} placeholder="Senha" value={password} onChangeText={setPassword} secureTextEntry />
+      <Pressable style={styles.button} onPress={() => handleLogin(email, password)}>
+        <Text style={styles.buttonText}>Entrar</Text>
+      </Pressable>
+      {error && <Text style={styles.error}>{error}</Text>}
     </View>
   );
-}
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: "center", padding: 24, gap: 12 },
+  loading: { flex: 1 },
+  input: { borderWidth: 1, borderColor: "#ccc", borderRadius: 8, padding: 12 },
+  button: { backgroundColor: "#4630EB", borderRadius: 8, padding: 12, alignItems: "center" },
+  buttonText: { color: "#fff", fontWeight: "600" },
+  error: { color: "red" },
+});
+
+export default Login;
 ```
 
-## Resumo das Responsabilidades no Sofisticado
+A View só conhece a Factory e a ViewModel; não importa `infra` nem `model`.
 
-- **Model**: Contém as **regras de negócio** puras, entidades e contratos (interfaces). Não sabe de onde vêm os dados (API, Firebase) nem como são exibidos (React).
-- **Infraestrutura**: Sabe **como** buscar/salvar os dados usando as bibliotecas específicas (Axios, Firebase SDK), cumprindo o contrato exigido pelo Model.
-- **ViewModel**: Converte os dados e erros do Model para estados de interface (UI State).
-- **Factory**: Une a Infraestrutura ao Model, e entrega para a ViewModel, isolando completamente a View.
-- **View**: Apenas exibe o que a ViewModel manda e avisa a ViewModel quando o usuário interage. Não conhece nada de `infra` ou `model`.
+## Responsabilidades (resumo)
+
+| Camada | Faz | Não faz |
+|---|---|---|
+| View | Renderiza, dispara ações | Regra, `try/catch`, importar infra/model |
+| ViewModel | Estado da tela, traduz erro em texto | Regra de negócio, JSX |
+| UseCase | Regras e orquestração | Conhecer React, Firebase, HTTP |
+| Model | Entidades, erros, interfaces | Importar React/Expo/SDKs |
+| Infra | Fala com SDKs e traduz erros | Deixar erro de biblioteca vazar |
+| Factory | Monta e injeta dependências | Conter lógica |
